@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔐 SOC Simulator - Análisis de Phishing</title>
+    <style>
+        /* ==================== ESTILOS GLOBALES ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: #0a0e17;
+            color: #e0e6ed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* ==================== CONTENEDOR PRINCIPAL ==================== */
+        #app {
+            width: 100%;
+            max-width: 1300px;
+            background: #111927;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ==================== HEADER ==================== */
+        #header {
+            background: linear-gradient(135deg, #0d1b2a, #1a2a3a);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #00ff9d, #00cc7d);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
+        }
+        .logo-text .highlight {
+            color: #00ff9d;
+        }
+
+        #stats-bar {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.85rem;
+        }
+
+        .stat-badge .icon {
+            font-size: 1rem;
+        }
+        .stat-badge .value {
+            font-weight: 600;
+            color: #fff;
+            min-width: 20px;
+        }
+        .stat-badge .value.green {
+            color: #00ff9d;
+        }
+        .stat-badge .value.red {
+            color: #ff6b6b;
+        }
+        .stat-badge .value.gold {
+            color: #ffd93d;
+        }
+
+        .btn-reset {
+            padding: 6px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #8a9ba8;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        /* ==================== CUERPO PRINCIPAL ==================== */
+        #main {
+            display: flex;
+            flex-direction: row;
+            min-height: 500px;
+            height: 580px;
+        }
+
+        /* ==================== BANDEJA DE CORREOS ==================== */
+        #inbox {
+            width: 340px;
+            min-width: 340px;
+            background: #0d1824;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        #inbox-header {
+            padding: 12px 16px 8px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #5a7a8a;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .email-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .email-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .email-item.active {
+            background: rgba(0, 255, 157, 0.06);
+            border-left: 3px solid #00ff9d;
+        }
+        .email-item .sender {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #fff;
+            margin-bottom: 3px;
+        }
+        .email-item .subject {
+            font-size: 0.85rem;
+            color: #8a9ba8;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .email-item .preview {
+            font-size: 0.75rem;
+            color: #5a7a8a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .email-item .status-badge {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            font-size: 0.6rem;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-badge.pending {
+            background: rgba(255, 255, 255, 0.06);
+            color: #5a7a8a;
+        }
+        .status-badge.safe {
+            background: rgba(0, 255, 157, 0.15);
+            color: #00ff9d;
+        }
+        .status-badge.phishing {
+            background: rgba(255, 107, 107, 0.15);
+            color: #ff6b6b;
+        }
+        .status-badge.skipped {
+            background: rgba(255, 217, 61, 0.1);
+            color: #ffd93d;
+        }
+
+        /* Scrollbar */
+        #inbox::-webkit-scrollbar {
+            width: 4px;
+        }
+        #inbox::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #inbox::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        /* ==================== VISUALIZADOR DE CORREO ==================== */
+        #email-viewer {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
+            background: #0a121c;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #email-viewer .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #3a5a6a;
+        }
+        #email-viewer .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        #email-viewer .empty-state h3 {
+            font-weight: 400;
+            font-size: 1.1rem;
+        }
+
+        #email-content {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        #email-content .email-header {
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 16px;
+        }
+
+        #email-content .email-subject {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        #email-content .email-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 24px;
+            font-size: 0.85rem;
+            color: #8a9ba8;
+        }
+
+        #email-content .email-meta strong {
+            color: #c0d0d8;
+            font-weight: 500;
+        }
+
+        #email-content .email-body {
+            flex: 1;
+            padding: 16px 0;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #c8d6e0;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+
+        #email-content .email-body .link {
+            color: #4a9eff;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        #email-content .email-body .suspicious {
+            background: rgba(255, 107, 107, 0.12);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border-left: 2px solid #ff6b6b;
+        }
+
+        #email-content .email-footer {
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: auto;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-safe {
+            background: #00ff9d;
+            color: #0a0e17;
+        }
+        .btn-safe:hover {
+            background: #00cc7d;
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(0, 255, 157, 0.2);
+        }
+
+        .btn-phishing {
+            background: #ff6b6b;
+            color: #fff;
+        }
+        .btn-phishing:hover {
+            background: #e05555;
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.2);
+        }
+
+        .btn-skip {
+            background: rgba(255, 255, 255, 0.06);
+            color: #8a9ba8;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .btn-skip:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ==================== MODAL ==================== */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(12px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.4s ease;
+        }
+
+        #modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #modal-content {
+            background: #111927;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        #modal-content .result-icon {
+            font-size: 64px;
+            margin-bottom: 12px;
+        }
+
+        #modal-content h2 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        #modal-content .subtitle {
+            color: #8a9ba8;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        #modal-content .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .stat-card .label {
+            font-size: 0.7rem;
+            color: #5a7a8a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .stat-card .value.green {
+            color: #00ff9d;
+        }
+        .stat-card .value.red {
+            color: #ff6b6b;
+        }
+        .stat-card .value.gold {
+            color: #ffd93d;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* ==================== FEEDBACK ==================== */
+        #feedback-bar {
+            padding: 8px 24px;
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(0, 0, 0, 0.2);
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        #feedback-bar .feedback-icon {
+            font-size: 1.1rem;
+        }
+        #feedback-bar .feedback-text {
+            color: #8a9ba8;
+        }
+        #feedback-bar .feedback-text.success {
+            color: #00ff9d;
+        }
+        #feedback-bar .feedback-text.error {
+            color: #ff6b6b;
+        }
+        #feedback-bar .feedback-text.info {
+            color: #ffd93d;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 900px) {
+            #main {
+                flex-direction: column;
+                height: auto;
+                min-height: 600px;
+            }
+            #inbox {
+                width: 100%;
+                min-width: unset;
+                max-height: 240px;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+            #email-viewer {
+                min-height: 380px;
+                padding: 16px 20px;
+            }
+            #stats-bar {
+                gap: 8px;
+            }
+            .stat-badge {
+                padding: 4px 10px;
+                font-size: 0.75rem;
+            }
+            #header {
+                padding: 12px 16px;
+            }
+            .logo-text {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 500px) {
+            #stats-bar .stat-badge .label {
+                display: none;
+            }
+            #email-content .email-subject {
+                font-size: 1rem;
+            }
+            .btn {
+                padding: 8px 16px;
+                font-size: 0.8rem;
+            }
+            #modal-content {
+                padding: 24px;
+            }
+            #modal-content .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* ==================== ANIMACIONES ==================== */
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        .pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .badge-new {
+            background: #ff6b6b;
+            color: #fff;
+            font-size: 0.55rem;
+            padding: 1px 8px;
+            border-radius: 10px;
+            margin-left: 6px;
+            font-weight: 700;
+        }
+
+        /* ===== PALETA BLANCA + MORADOS PASTEL ===== */
+        body {
+            background: #ffffff !important;
+            color: #51466c !important;
+        }
+        #app {
+            background: #ffffff !important;
+            color: #51466c !important;
+            border: 1px solid #e8e0f6 !important;
+            box-shadow: 0 18px 50px rgba(111, 86, 160, .13) !important;
+        }
+        #header {
+            background: linear-gradient(135deg, #f4efff, #e9e0ff) !important;
+            border-bottom: 1px solid #e8e0f6 !important;
+        }
+        .logo-icon {
+            background: linear-gradient(135deg, #c8b5f5, #a991e8) !important;
+            color: #ffffff !important;
+        }
+        .logo-text { color: #51416f !important; }
+        .logo-text .highlight { color: #9075d0 !important; }
+
+        #stats-bar { color: #665982 !important; }
+        .stat-badge, .stat-card {
+            background: #f8f5ff !important;
+            border: 1px solid #e9e1f7 !important;
+            color: #665982 !important;
+        }
+        .stat-card .value, .stat-badge strong { color: #5a477f !important; }
+
+        #main { background: #ffffff !important; }
+        #inbox {
+            background: #fcfbff !important;
+            border-right: 1px solid #eee8f8 !important;
+        }
+        #inbox-header { color: #9687b2 !important; }
+        .email-item {
+            background: #fcfbff !important;
+            border-bottom: 1px solid #f0ebf8 !important;
+            color: #574b70 !important;
+        }
+        .email-item:hover { background: #f4efff !important; }
+        .email-item.active {
+            background: #eee7ff !important;
+            border-left: 3px solid #a58bdd !important;
+        }
+        .email-item .sender, .email-item .subject { color: #51466c !important; }
+        .email-item .preview, .email-item .time { color: #9388a6 !important; }
+
+        #email-viewer {
+            background: #ffffff !important;
+            color: #51466c !important;
+        }
+        #email-content { color: #51466c !important; }
+        #email-content h1, #email-content h2, #email-content h3,
+        #email-content strong, #email-content b { color: #51416f !important; }
+        #email-content p, #email-content div, #email-content span { color: inherit; }
+        #email-content a { color: #8c70cb !important; }
+        #email-content a:hover { color: #7053b2 !important; }
+
+        .btn { box-shadow: 0 3px 10px rgba(91, 70, 135, .08); }
+        .btn-safe {
+            background: #d9cafa !important;
+            color: #51416f !important;
+        }
+        .btn-safe:hover { background: #cbb7f3 !important; }
+        .btn-phishing {
+            background: #b8a2e8 !important;
+            color: #ffffff !important;
+        }
+        .btn-phishing:hover { background: #a58bdd !important; }
+        .btn-skip, .btn-reset {
+            background: #f2edfb !important;
+            color: #705d91 !important;
+            border: 1px solid #e4daf5 !important;
+        }
+        .btn-skip:hover, .btn-reset:hover {
+            background: #e9e0f8 !important;
+            color: #574477 !important;
+        }
+
+        #feedback-bar {
+            background: #faf8ff !important;
+            border-top: 1px solid #eee8f8 !important;
+            color: #74678d !important;
+        }
+        #feedback-bar .success, .feedback-success { color: #648e7a !important; }
+        #feedback-bar .error, .feedback-error { color: #bd7185 !important; }
+        .badge-new {
+            background: #e6dcfa !important;
+            color: #7259a7 !important;
+        }
+        .pulse { background: #bba7eb !important; }
+
+        #modal-overlay { background: rgba(65, 48, 96, .32) !important; }
+        #modal-content {
+            background: #ffffff !important;
+            color: #51466c !important;
+            border: 1px solid #e8e0f6 !important;
+            box-shadow: 0 18px 55px rgba(91, 70, 135, .18) !important;
+        }
+        #modal-content h1, #modal-content h2, #modal-content h3 {
+            color: #51416f !important;
+        }
+        #modal-content p { color: #786d8e !important; }
+
+        @media (max-width: 700px) {
+            body { background: #ffffff !important; }
+            #app { border-radius: 12px !important; }
+            #inbox { background: #fcfbff !important; }
+        }
+
+    
+        /* Texto negro en toda la interfaz */
+        body, #app, #main, #email-viewer, #email-content,
+        #email-content p, #email-content div, #email-content span,
+        #email-content li, #email-content label,
+        .logo-text, .logo-text .highlight,
+        #stats-bar, .stat-badge, .stat-card,
+        .email-item, .email-item .sender, .email-item .subject,
+        .email-item .preview, .email-item .time,
+        #inbox-header, #feedback-bar,
+        #modal-content, #modal-content h1, #modal-content h2,
+        #modal-content h3, #modal-content p {
+            color: #000000 !important;
+        }
+        #email-content a { color: #7051b5 !important; }
+        .btn-safe { color: #000000 !important; }
+        .btn-phishing { color: #ffffff !important; }
+        .btn-skip, .btn-reset { color: #000000 !important; }
+
+</style>
+</head>
+<body>
+
+    <!-- ==================== APP ==================== -->
+    <div id="app">
+
+        <!-- HEADER -->
+        <div id="header">
+            <div class="logo">
+                <div class="logo-icon">🛡️</div>
+                <div class="logo-text"><span class="highlight">SOC</span> Simulator</div>
+            </div>
+            <div id="stats-bar">
+                <div class="stat-badge">
+                    <span class="icon">📧</span>
+                    <span class="label">Pendientes</span>
+                    <span class="value" id="pending-count">0</span>
+                </div>
+                <div class="stat-badge">
+                    <span class="icon">✅</span>
+                    <span class="label">Correctos</span>
+                    <span class="value green" id="correct-count">0</span>
+                </div>
+                <div class="stat-badge">
+                    <span class="icon">❌</span>
+                    <span class="label">Fallos</span>
+                    <span class="value red" id="wrong-count">0</span>
+                </div>
+                <div class="stat-badge">
+                    <span class="icon">🏆</span>
+                    <span class="label">Puntuación</span>
+                    <span class="value gold" id="score-display">0</span>
+                </div>
+                <button class="btn-reset" onclick="resetGame()">🔄 Reiniciar</button>
+            </div>
+        </div>
+
+        <!-- MAIN -->
+        <div id="main">
+            <!-- INBOX -->
+            <div id="inbox">
+                <div id="inbox-header">
+                    <span>📥 Bandeja de entrada</span>
+                    <span id="email-counter">0 emails</span>
+                </div>
+                <div id="email-list"></div>
+            </div>
+
+            <!-- EMAIL VIEWER -->
+            <div id="email-viewer">
+                <div class="empty-state" id="empty-state">
+                    <div class="icon">📭</div>
+                    <h3>Selecciona un correo para analizar</h3>
+                    <p style="color:#3a5a6a;font-size:0.85rem;margin-top:8px;">Evalúa si es seguro o phishing</p>
+                </div>
+
+                <div id="email-content">
+                    <div class="email-header">
+                        <div class="email-subject" id="view-subject">Asunto del correo</div>
+                        <div class="email-meta">
+                            <span><strong>De:</strong> <span id="view-sender">remitente@ejemplo.com</span></span>
+                            <span><strong>Para:</strong> <span id="view-recipient">analista@soc.local</span></span>
+                            <span><strong>Fecha:</strong> <span id="view-date">hoy</span></span>
+                        </div>
+                    </div>
+                    <div class="email-body" id="view-body">
+                        Contenido del correo...
+                    </div>
+                    <div class="email-footer">
+                        <button class="btn btn-safe" id="btn-safe" onclick="classifyEmail('safe')">
+                            ✅ Marcar como Seguro
+                        </button>
+                        <button class="btn btn-phishing" id="btn-phishing" onclick="classifyEmail('phishing')">
+                            🚨 Marcar como Phishing
+                        </button>
+                        <button class="btn btn-skip" onclick="skipEmail()">
+                            ⏭️ Saltar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FEEDBACK BAR -->
+        <div id="feedback-bar">
+            <span class="feedback-icon">💡</span>
+            <span class="feedback-text" id="feedback-text">Bienvenido al SOC Simulator. Analiza los correos y decide si son seguros o phishing.</span>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL ==================== -->
+    <div id="modal-overlay">
+        <div id="modal-content">
+            <div class="result-icon" id="modal-icon">🏆</div>
+            <h2 id="modal-title">¡Misión completada!</h2>
+            <p class="subtitle" id="modal-subtitle">Has analizado todos los correos</p>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Correctos</div>
+                    <div class="value green" id="modal-correct">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Fallos</div>
+                    <div class="value red" id="modal-wrong">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Puntuación</div>
+                    <div class="value gold" id="modal-score">0</div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-safe" onclick="resetGame()">🔄 Jugar de nuevo</button>
+                <button class="btn btn-skip" onclick="closeModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+    <script>
+        // ================================================================
+        //  SOC SIMULATOR - ANÁLISIS DE PHISHING
+        //  Simulador profesional para entrenamiento en ciberseguridad
+        // ================================================================
+
+        // ==================== BASE DE DATOS DE CORREOS ====================
+        const EMAIL_DATABASE = [{
+            id: 1,
+            sender: 'seguridad@banco-nacional.com',
+            subject: '⚠️ ALERTA DE SEGURIDAD: Actividad sospechosa en tu cuenta',
+            body: `Estimado cliente,
+
+            Hemos detectado actividad inusual en su cuenta bancaria. Se han registrado múltiples intentos de acceso desde ubicaciones desconocidas.
+
+            Para proteger su cuenta, debe verificar su identidad inmediatamente haciendo clic en el siguiente enlace:
+
+            🔗 https://banco-nacional.verificacion-segura.com/verify
+
+            Si no realiza la verificación en las próximas 24 horas, su cuenta será bloqueada temporalmente.
+
+            Atentamente,
+            Departamento de Seguridad
+            Banco Nacional`,
+            isPhishing: true,
+            clues: [
+                'Dominio sospechoso: "verificacion-segura.com" no es el dominio oficial del banco',
+                'Crear urgencia falsa (24 horas)',
+                'El banco nunca pide verificación por correo'
+            ]
+        }, {
+            id: 2,
+            sender: 'soporte@empresa.com',
+            subject: 'Actualización de políticas de seguridad - Importante',
+            body: `Hola equipo,
+
+            Les informamos que hemos actualizado nuestras políticas de seguridad interna. Todos los empleados deben leer el nuevo documento y firmar el acuerdo.
+
+            📎 [Adjunto: Politicas_Seguridad_2024.pdf]
+
+            Por favor, confirmen la lectura antes del 15 de diciembre.
+
+            Saludos cordiales,
+            Departamento de RRHH
+            Empresa S.A.`,
+            isPhishing: false,
+            clues: [
+                'Dominio legítimo de la empresa',
+                'No solicita datos personales ni credenciales',
+                'Es una comunicación interna típica'
+            ]
+        }, {
+            id: 3,
+            sender: 'notificaciones@paypal-seguro.com',
+            subject: '🔒 Tu cuenta de PayPal ha sido limitada',
+            body: `Hola usuario,
+
+            Hemos detectado que tu cuenta de PayPal ha sido comprometida. Por seguridad, hemos limitado el acceso a tu cuenta.
+
+            Para restaurar el acceso completo, debes confirmar tu identidad en el siguiente enlace:
+
+            🔗 https://paypal-seguro.com/restaurar-cuenta
+
+            Si no restauras tu cuenta en 48 horas, será suspendida permanentemente.
+
+            Equipo de Seguridad de PayPal`,
+            isPhishing: true,
+            clues: [
+                'Dominio falso: "paypal-seguro.com" (PayPal usa paypal.com)',
+                'Urgencia falsa con amenaza de suspensión',
+                'Solicita confirmación de identidad por enlace externo'
+            ]
+        }, {
+            id: 4,
+            sender: 'newsletter@tecnologia.com',
+            subject: '📰 Boletín semanal de ciberseguridad',
+            body: `Hola,
+
+            Aquí tienes el resumen de noticias de ciberseguridad de esta semana:
+
+            1. Nuevas vulnerabilidades en Windows 11
+            2. Aumento de ataques de ransomware en Latinoamérica
+            3. Consejos para proteger tu identidad digital
+
+            Para más información, visita nuestro blog:
+            🔗 https://www.tecnologia.com/blog/ciberseguridad
+
+            ¡Gracias por leernos!
+            Equipo de Tecnología.com`,
+            isPhishing: false,
+            clues: [
+                'Newsletter legítimo con contenido informativo',
+                'No solicita datos personales',
+                'Enlace a dominio conocido'
+            ]
+        }, {
+            id: 5,
+            sender: 'administracion@servidor-empresa.com',
+            subject: '⚠️ Cambio de contraseña requerido',
+            body: `Estimado usuario,
+
+            Por motivos de seguridad, debe cambiar su contraseña de acceso al sistema. Su contraseña actual ha expirado.
+
+            Para cambiarla, haga clic aquí:
+            🔗 https://servidor-empresa.com/login/cambiar-contrasena
+
+            Si tiene problemas, contacte al soporte técnico.
+
+            Administración del Sistema`,
+            isPhishing: true,
+            clues: [
+                'Enlace a dominio que simula ser interno pero tiene "login" en la URL',
+                'Cambio de contraseña por correo no es práctica segura',
+                'No especifica el sistema al que pertenece'
+            ]
+        }, {
+            id: 6,
+            sender: 'hr@empresa-sa.com',
+            subject: '📋 Evaluación de desempeño Q4',
+            body: `Hola,
+
+            Recuerda completar tu evaluación de desempeño correspondiente al cuarto trimestre del año.
+
+            El formulario está disponible en el sistema interno:
+            🔗 https://intranet.empresa-sa.com/evaluaciones
+
+            Fecha límite: 20 de diciembre de 2024
+
+            Cualquier duda, consulta con tu supervisor.
+
+            Saludos,
+            Recursos Humanos
+            Empresa S.A.`,
+            isPhishing: false,
+            clues: [
+                'Dominio legítimo de intranet de la empresa',
+                'Comunicación interna con información concreta',
+                'No solicita datos confidenciales'
+            ]
+        }, {
+            id: 7,
+            sender: 'soporte@microsoft-seguridad.com',
+            subject: '🛡️ Alerta de seguridad: Tu cuenta de Microsoft está en riesgo',
+            body: `Hola usuario de Microsoft,
+
+            Hemos detectado un inicio de sesión sospechoso desde una ubicación desconocida (Moscú, Rusia).
+
+            Por favor, verifica tu identidad para evitar el bloqueo de tu cuenta:
+            🔗 https://microsoft-seguridad.com/verificar
+
+            Si no fuiste tú, cambia tu contraseña inmediatamente.
+
+            Microsoft Security Team`,
+            isPhishing: true,
+            clues: [
+                'Dominio falso: "microsoft-seguridad.com" (Microsoft usa microsoft.com)',
+                'Crear alarma con ubicación específica',
+                'Solicita verificación externa'
+            ]
+        }, {
+            id: 8,
+            sender: 'info@conferencia-ciberseguridad.org',
+            subject: '🎫 Inscripción confirmada - Congreso de Ciberseguridad',
+            body: `Hola,
+
+            ¡Tu inscripción al Congreso Internacional de Ciberseguridad ha sido confirmada!
+
+            Evento: Congreso de Ciberseguridad 2024
+            Fecha: 15-17 de enero de 2025
+            Lugar: Centro de Convenciones, Ciudad de México
+
+            Puedes descargar tu pase:
+            🔗 https://conferencia-ciberseguridad.org/pase
+
+            ¡Te esperamos!
+
+            Organización del Congreso`,
+            isPhishing: false,
+            clues: [
+                'Dominio legítimo de organización de eventos',
+                'No solicita datos personales sensibles',
+                'Información concreta del evento'
+            ]
+        }, {
+            id: 9,
+            sender: 'bancosantander.verificacion@gmail.com',
+            subject: '🚨 TU CUENTA HA SIDO COMPROMETIDA - ACTÚA AHORA',
+            body: `¡URGENTE!
+
+            Su cuenta de Banco Santander ha sido comprometida. Se han realizado transferencias no autorizadas por un total de $5,200 MXN.
+
+            Para detener las transferencias y recuperar su cuenta, debe verificar su identidad AHORA:
+            🔗 https://bancosantander-verificacion.com/restaurar
+
+            Si no lo hace en las próximas 2 horas, su cuenta será vaciada.
+
+            DEPARTAMENTO DE SEGURIDAD - BANCO SANTANDER`,
+            isPhishing: true,
+            clues: [
+                'Remitente usa @gmail.com (banco legítimo usaría @bancosantander.com)',
+                'Mensaje en mayúsculas con urgencia extrema',
+                'Amenaza de pérdida de dinero inmediata'
+            ]
+        }, {
+            id: 10,
+            sender: 'comunicaciones@ministerio.gob.mx',
+            subject: '📄 Comunicado oficial - Nueva normativa de ciberseguridad',
+            body: `Estimado ciudadano,
+
+            El Ministerio de Economía informa sobre la nueva normativa de ciberseguridad para empresas y ciudadanos.
+
+            Puede consultar el documento completo en:
+            🔗 https://www.gob.mx/economia/normativas/ciberseguridad-2024
+
+            Esta normativa entrará en vigor el 1 de enero de 2025.
+
+            Atentamente,
+            Unidad de Comunicación Social
+            Gobierno de México`,
+            isPhishing: false,
+            clues: [
+                'Dominio oficial .gob.mx',
+                'Comunicado oficial sin solicitud de datos',
+                'Información normativa concreta'
+            ]
+        }, {
+            id: 11,
+            sender: 'netflix.verificacion@seguridad.com',
+            subject: '⚠️ Tu cuenta de Netflix será suspendida',
+            body: `Hola,
+
+            No hemos podido verificar tu método de pago. Tu cuenta de Netflix será suspendida en 24 horas.
+
+            Para evitar la suspensión, actualiza tu información de pago:
+            🔗 https://netflix-seguridad.com/actualizar-pago
+
+            Equipo de Netflix`,
+            isPhishing: true,
+            clues: [
+                'Dominio falso: "netflix-seguridad.com"',
+                'Solicita actualización de pago por enlace externo',
+                'Crear urgencia con suspensión inmediata'
+            ]
+        }, {
+            id: 12,
+            sender: 'soporte@empresa-sa.com',
+            subject: '🔧 Mantenimiento programado del sistema',
+            body: `Hola equipo,
+
+            Les informamos que se realizará un mantenimiento programado del sistema este fin de semana.
+
+            Fecha: Sábado 14 de diciembre
+            Horario: 8:00 - 14:00 horas
+            Servicios afectados: Correo electrónico e intranet
+
+            Durante este periodo, el sistema estará disponible pero con posibles interrupciones.
+
+            Agradecemos su comprensión.
+
+            Departamento de TI
+            Empresa S.A.`,
+            isPhishing: false,
+            clues: [
+                'Dominio legítimo de la empresa',
+                'Comunicación de mantenimiento con información concreta',
+                'No solicita datos ni acciones del usuario'
+            ]
+        }, ];
+
+        // ==================== ESTADO DEL JUEGO ====================
+        const state = {
+            emails: [],
+            currentIndex: 0,
+            correct: 0,
+            wrong: 0,
+            score: 0,
+            totalAnalyzed: 0,
+            processedIds: new Set(),
+            gameOver: false,
+        };
+
+        // ==================== DOM REFERENCIAS ====================
+        const emailList = document.getElementById('email-list');
+        const emailCounter = document.getElementById('email-counter');
+        const pendingCount = document.getElementById('pending-count');
+        const correctCount = document.getElementById('correct-count');
+        const wrongCount = document.getElementById('wrong-count');
+        const scoreDisplay = document.getElementById('score-display');
+
+        const viewSubject = document.getElementById('view-subject');
+        const viewSender = document.getElementById('view-sender');
+        const viewRecipient = document.getElementById('view-recipient');
+        const viewDate = document.getElementById('view-date');
+        const viewBody = document.getElementById('view-body');
+
+        const emptyState = document.getElementById('empty-state');
+        const emailContent = document.getElementById('email-content');
+        const feedbackText = document.getElementById('feedback-text');
+        const feedbackIcon = document.querySelector('.feedback-icon');
+
+        // ==================== UTILIDADES ====================
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function getRandomDate() {
+            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            const d = new Date();
+            d.setDate(d.getDate() - Math.floor(Math.random() * 5));
+            return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+        }
+
+        function getStatusBadge(status) {
+            const labels = {
+                'pending': { class: 'pending', text: '⏳ Pendiente' },
+                'safe': { class: 'safe', text: '✅ Seguro' },
+                'phishing': { class: 'phishing', text: '🚨 Phishing' },
+                'skipped': { class: 'skipped', text: '⏭️ Saltado' }
+            };
+            return labels[status] || labels.pending;
+        }
+
+        // ==================== INICIALIZAR JUEGO ====================
+        function initGame() {
+            // Mezclar correos y tomar solo 8-10 para la partida
+            const shuffled = shuffleArray([...EMAIL_DATABASE]);
+            const count = Math.min(8 + Math.floor(Math.random() * 3), shuffled.length);
+            state.emails = shuffled.slice(0, count).map((email, index) => ({
+                ...email,
+                id: index + 1,
+                status: 'pending',
+                date: getRandomDate(),
+                recipient: 'analista@soc.local',
+            }));
+
+            state.currentIndex = 0;
+            state.correct = 0;
+            state.wrong = 0;
+            state.score = 0;
+            state.totalAnalyzed = 0;
+            state.processedIds = new Set();
+            state.gameOver = false;
+
+            renderInbox();
+            renderEmail(0);
+            updateStats();
+            setFeedback('💡', 'Bienvenido al SOC Simulator. Analiza los correos y decide si son seguros o phishing.', '');
+            closeModal();
+        }
+
+        // ==================== RENDER BANDEJA ====================
+        function renderInbox() {
+            emailList.innerHTML = '';
+            state.emails.forEach((email, index) => {
+                const div = document.createElement('div');
+                div.className = `email-item ${index === state.currentIndex ? 'active' : ''}`;
+                div.onclick = () => selectEmail(index);
+
+                const status = getStatusBadge(email.status);
+                const isNew = email.status === 'pending';
+
+                div.innerHTML = `
+                    <div class="sender">${email.sender}</div>
+                    <div class="subject">${email.subject} ${isNew ? '<span class="badge-new">NUEVO</span>' : ''}</div>
+                    <div class="preview">${email.body.substring(0, 60)}...</div>
+                    <span class="status-badge ${status.class}">${status.text}</span>
+                `;
+                emailList.appendChild(div);
+            });
+
+            const pending = state.emails.filter(e => e.status === 'pending').length;
+            emailCounter.textContent = `${state.emails.length} emails`;
+            pendingCount.textContent = pending;
+        }
+
+        // ==================== RENDER CORREO ====================
+        function renderEmail(index) {
+            if (state.emails.length === 0 || index >= state.emails.length) {
+                emptyState.style.display = 'flex';
+                emailContent.style.display = 'none';
+                return;
+            }
+
+            const email = state.emails[index];
+            emptyState.style.display = 'none';
+            emailContent.style.display = 'flex';
+
+            viewSubject.textContent = email.subject;
+            viewSender.textContent = email.sender;
+            viewRecipient.textContent = email.recipient || 'analista@soc.local';
+            viewDate.textContent = email.date || getRandomDate();
+
+            // Resaltar elementos sospechosos en el cuerpo
+            let bodyHtml = email.body;
+            // Detectar enlaces y hacerlos clickeables
+            bodyHtml = bodyHtml.replace(/(https?:\/\/[^\s]+)/g, '<span class="link">$1</span>');
+            // Resaltar palabras clave sospechosas
+            const suspiciousWords = ['urgente', 'inmediatamente', 'suspendida', 'bloqueada', 'verificar', 'confirmar',
+                'actualizar'
+            ];
+            suspiciousWords.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                bodyHtml = bodyHtml.replace(regex, match => `<span class="suspicious">${match}</span>`);
+            });
+
+            viewBody.innerHTML = bodyHtml;
+
+            // Habilitar/deshabilitar botones
+            const isPending = email.status === 'pending';
+            document.getElementById('btn-safe').disabled = !isPending || state.gameOver;
+            document.getElementById('btn-phishing').disabled = !isPending || state.gameOver;
+            document.getElementById('btn-safe').style.opacity = isPending ? '1' : '0.5';
+            document.getElementById('btn-phishing').style.opacity = isPending ? '1' : '0.5';
+
+            renderInbox();
+        }
+
+        // ==================== SELECCIONAR CORREO ====================
+        function selectEmail(index) {
+            if (state.gameOver) return;
+            state.currentIndex = index;
+            renderEmail(index);
+            renderInbox();
+        }
+
+        // ==================== CLASIFICAR CORREO ====================
+        function classifyEmail(decision) {
+            if (state.gameOver) return;
+
+            const email = state.emails[state.currentIndex];
+            if (email.status !== 'pending') {
+                setFeedback('⚠️', 'Este correo ya fue analizado. Selecciona otro.', 'info');
+                return;
+            }
+
+            const isCorrect = (decision === 'safe' && !email.isPhishing) ||
+                (decision === 'phishing' && email.isPhishing);
+
+            // Registrar estado
+            email.status = decision === 'safe' ? 'safe' : 'phishing';
+
+            if (isCorrect) {
+                state.correct++;
+                const bonus = state.totalAnalyzed > 0 ? 10 : 0;
+                const points = 50 + bonus + (email.isPhishing ? 20 : 0);
+                state.score += points;
+                setFeedback('✅', `¡Correcto! +${points} puntos. ${email.isPhishing ? 'Era phishing 🚨' : 'Era seguro ✅'}`, 'success');
+
+                // Mostrar pistas
+                if (email.clues && email.clues.length > 0) {
+                    setTimeout(() => {
+                        setFeedback('🔍', `Pistas: ${email.clues.join(' • ')}`, 'info');
+                    }, 2000);
+                }
+            } else {
+                state.wrong++;
+                state.score = Math.max(0, state.score - 20);
+                setFeedback('❌', `Incorrecto. ${email.isPhishing ? 'Era phishing 🚨' : 'Era seguro ✅'}`, 'error');
+                if (email.clues) {
+                    setTimeout(() => {
+                        setFeedback('🔍', `Pistas: ${email.clues.join(' • ')}`, 'info');
+                    }, 2000);
+                }
+            }
+
+            state.totalAnalyzed++;
+            state.processedIds.add(email.id);
+
+            updateStats();
+
+            // Buscar siguiente correo pendiente
+            const nextPending = state.emails.findIndex(e => e.status === 'pending');
+            if (nextPending === -1) {
+                // Todos los correos analizados
+                state.gameOver = true;
+                setTimeout(() => showResults(), 1500);
+            } else {
+                setTimeout(() => {
+                    state.currentIndex = nextPending;
+                    renderEmail(nextPending);
+                    renderInbox();
+                }, 500);
+            }
+        }
+
+        // ==================== SALTAR CORREO ====================
+        function skipEmail() {
+            if (state.gameOver) return;
+            const email = state.emails[state.currentIndex];
+            if (email.status !== 'pending') {
+                setFeedback('⚠️', 'Este correo ya fue analizado.', 'info');
+                return;
+            }
+
+            email.status = 'skipped';
+            state.score = Math.max(0, state.score - 10);
+            setFeedback('⏭️', 'Correo saltado. -10 puntos', 'info');
+            updateStats();
+
+            const nextPending = state.emails.findIndex(e => e.status === 'pending');
+            if (nextPending === -1) {
+                state.gameOver = true;
+                setTimeout(() => showResults(), 1000);
+            } else {
+                state.currentIndex = nextPending;
+                renderEmail(nextPending);
+                renderInbox();
+            }
+        }
+
+        // ==================== ACTUALIZAR ESTADÍSTICAS ====================
+        function updateStats() {
+            const pending = state.emails.filter(e => e.status === 'pending').length;
+            pendingCount.textContent = pending;
+            correctCount.textContent = state.correct;
+            wrongCount.textContent = state.wrong;
+            scoreDisplay.textContent = state.score;
+            renderInbox();
+        }
+
+        // ==================== FEEDBACK ====================
+        function setFeedback(icon, text, type = '') {
+            feedbackIcon.textContent = icon;
+            feedbackText.textContent = text;
+            feedbackText.className = 'feedback-text ' + type;
+        }
+
+        // ==================== MOSTRAR RESULTADOS ====================
+        function showResults() {
+            document.getElementById('modal-icon').textContent = state.correct > state.wrong ? '🏆' : '💪';
+            document.getElementById('modal-title').textContent =
+                state.correct > state.wrong ? '¡Excelente trabajo!' : 'Sigue practicando';
+            document.getElementById('modal-subtitle').textContent =
+                `Analizaste ${state.totalAnalyzed} correos`;
+
+            document.getElementById('modal-correct').textContent = state.correct;
+            document.getElementById('modal-wrong').textContent = state.wrong;
+            document.getElementById('modal-score').textContent = state.score;
+
+            // Calificación
+            const percentage = state.totalAnalyzed > 0 ? (state.correct / state.totalAnalyzed) * 100 : 0;
+            let grade = '';
+            if (percentage >= 90) grade = '🌟 Excelente SOC Analyst';
+            else if (percentage >= 70) grade = '👍 Buen trabajo';
+            else if (percentage >= 50) grade = '📚 Necesitas más práctica';
+            else grade = '🔴 Revisa los conceptos básicos';
+
+            document.getElementById('modal-subtitle').textContent += ` (${grade})`;
+
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+
+        // ==================== REINICIAR ====================
+        function resetGame() {
+            initGame();
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        // ==================== INICIO ====================
+        initGame();
+
+        console.log('🛡️ SOC Simulator iniciado');
+        console.log('📧 Analiza los correos y decide si son seguros o phishing');
+        console.log('🎯 Objetivo: Identificar correctamente todas las amenazas');
+    </script>
+</body>
+</html>
